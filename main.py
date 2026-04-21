@@ -4,6 +4,7 @@ Orchestrates the full pipeline:
   1. Generate prompts with Claude
   2. Automate Higgsfield AI to produce images
   3. Save images to a local folder (organized by model/date)
+  4. Post each image to Twitter/X (when TWITTER_ENABLED=true)
 
 Schedule (default): runs 3× per day at 08:00, 14:00, 20:00
 Each run generates 2 images per model → 6 images/model/day × 3 models = 18 total/day
@@ -26,6 +27,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from prompt_generator import generate_all_prompts, MODELS
 from higgsfield_bot import HiggsFieldBot
+import twitter_poster
 
 load_dotenv()
 logging.basicConfig(
@@ -40,9 +42,10 @@ log = logging.getLogger(__name__)
 HIGGSFIELD_EMAIL    = os.environ["HIGGSFIELD_EMAIL"]
 HIGGSFIELD_PASSWORD = os.environ["HIGGSFIELD_PASSWORD"]
 
-DOWNLOAD_DIR   = os.getenv("DOWNLOAD_DIR", "downloads")
-HEADLESS       = os.getenv("HEADLESS", "true").lower() == "true"
-SCHEDULE_TIMES = os.getenv("SCHEDULE_TIMES", "08:00,14:00,20:00")
+DOWNLOAD_DIR     = os.getenv("DOWNLOAD_DIR", "downloads")
+HEADLESS         = os.getenv("HEADLESS", "true").lower() == "true"
+SCHEDULE_TIMES   = os.getenv("SCHEDULE_TIMES", "08:00,14:00,20:00")
+TWITTER_ENABLED  = os.getenv("TWITTER_ENABLED", "false").lower() == "true"
 
 IMAGES_PER_RUN = 2   # images per model per run (3 runs × 2 = 6/model/day)
 
@@ -91,6 +94,13 @@ def run_pipeline():
             log.info(f"  Saved {len(downloaded_files)} image(s) for {model_display} to {save_dir}")
         else:
             log.warning(f"  No images saved for {model_display}.")
+            continue
+
+        # 3. Post images to Twitter (optional)
+        if TWITTER_ENABLED and downloaded_files:
+            log.info(f"Step 3/3 – Posting {len(downloaded_files)} image(s) to Twitter for {model_display}...")
+            posted = twitter_poster.post_batch(downloaded_files, model_name=model_display)
+            log.info(f"  Posted {len(posted)}/{len(downloaded_files)} tweet(s) for {model_display}")
 
     log.info("Pipeline complete.\n")
 
