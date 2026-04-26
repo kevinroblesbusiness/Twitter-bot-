@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fanvue_postgres
+    environment:
+      POSTGRES_USER: fanvue
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fanvue_chatbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fanvue"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: fanvue_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: fanvue_backend
+    environment:
+      DATABASE_URL: postgresql://fanvue:password@postgres:5432/fanvue_chatbot
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: development
+      FANVUE_CLIENT_ID: ${FANVUE_CLIENT_ID}
+      FANVUE_CLIENT_SECRET: ${FANVUE_CLIENT_SECRET}
+      FANVUE_REDIRECT_URI: http://localhost:3001/api/auth/callback
+      FANVUE_WEBHOOK_SECRET: ${FANVUE_WEBHOOK_SECRET}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fanvue_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+
+volumes:
+  postgres_data:
