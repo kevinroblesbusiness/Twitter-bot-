@@ -1,8 +1,14 @@
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ReactElement } from 'react';
 
-export default function App({ Component, pageProps }: AppProps) {
+interface AppPropsWithCreator extends AppProps {
+  Component: AppProps['Component'] & {
+    (props: any): ReactElement;
+  };
+}
+
+export default function App({ Component, pageProps }: AppPropsWithCreator) {
   const router = useRouter();
   const [creatorId, setCreatorId] = useState<string | null>(null);
 

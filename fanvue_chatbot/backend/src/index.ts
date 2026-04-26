@@ -17,6 +17,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 
+// Webhook raw body parser (for signature verification)
+app.use('/webhooks', express.raw({ type: 'application/json' }));
+
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

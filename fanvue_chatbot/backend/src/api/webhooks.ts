@@ -9,23 +9,11 @@ export function setupWebhookHandler(): Router {
   const router = Router();
   const fanvueApi = createFanvueAPI();
 
-  // Parse raw body for signature verification
-  router.use('/fanvue', (req: Request, res: Response, next) => {
-    let rawBody = '';
-    req.on('data', (chunk) => {
-      rawBody += chunk.toString();
-    });
-    req.on('end', () => {
-      req.rawBody = rawBody;
-      next();
-    });
-  });
-
   // Main webhook endpoint
   router.post('/fanvue', async (req: Request, res: Response) => {
     try {
       const signature = req.headers['x-fanvue-signature'] as string;
-      const rawBody = req.rawBody as string;
+      const rawBody = (req.body as Buffer).toString('utf-8');
 
       // Verify signature
       let payload;

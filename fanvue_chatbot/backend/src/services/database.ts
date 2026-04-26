@@ -42,7 +42,12 @@ export async function runSchema() {
   if (!pool) throw new Error('Database not initialized');
 
   try {
-    const schemaPath = path.join(__dirname, '../../..', 'DATABASE_SCHEMA.sql');
+    const schemaPath = path.join(__dirname, '../../../..', 'DATABASE_SCHEMA.sql');
+    if (!fs.existsSync(schemaPath)) {
+      console.warn(`⚠️ Schema file not found at ${schemaPath}. Skipping initialization.`);
+      console.warn('   Run migrations manually or provide DATABASE_SCHEMA.sql');
+      return;
+    }
     const schema = fs.readFileSync(schemaPath, 'utf-8');
 
     // Split by semicolon and execute separately to handle CREATE FUNCTION
