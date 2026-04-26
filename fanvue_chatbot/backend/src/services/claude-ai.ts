@@ -8,6 +8,7 @@ interface Fan {
   engagement_score?: number;
   total_lifetime?: number;
   average_ppv_price?: number;
+  fanContext?: string;
 }
 
 interface Creator {
@@ -119,15 +120,24 @@ Writing guidelines:
 About them:
 - Subscriber tier: ${fan.subscription_tier}
 - They just asked: "${originalRequest}"
-- Lifetime spent: $${fan.total_lifetime || 0}
+- Lifetime spent: $${fan.total_lifetime || 0}`;
 
-Content to recommend:
+    if (fan.fanContext) {
+      prompt += `\n\nPersonal details they've shared:\n${fan.fanContext}`;
+    }
+
+    prompt += `\n\nContent to recommend:
 - Title: ${content.filename}
 - Price: $${content.price}
 - ${content.duration_seconds ? `Duration: ${Math.floor(content.duration_seconds / 60)} min` : 'Photo set'}
 - Tags: ${content.tags.slice(0, 3).join(', ')}
 
-Write ONLY the message itself (no labels, no meta text). Keep it under 150 words. Sound personal and authentic.`;
+Instructions:
+- Reference 1-2 of their personal details if available
+- Keep message under 150 words
+- Sound personal and authentic
+- Never mention details they haven't shared
+- Write ONLY the message itself (no labels, no meta text)`;
 
     return prompt;
   }

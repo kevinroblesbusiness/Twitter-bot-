@@ -7,6 +7,7 @@ import { setupAuthRoutes } from './api/auth.js';
 import { setupCreatorRoutes } from './api/creators.js';
 import { setupFanRoutes } from './api/fans.js';
 import { setupMessageRoutes } from './api/messages.js';
+import { setupFanDetailsRoutes } from './api/fan-details.js';
 import { startMessageWorker } from './services/message-worker.js';
 
 dotenv.config();
@@ -29,6 +30,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/auth', setupAuthRoutes());
 app.use('/api/creators', setupCreatorRoutes());
 app.use('/api/fans', setupFanRoutes());
+app.use('/api/fan-details', setupFanDetailsRoutes());
 app.use('/api/messages', setupMessageRoutes());
 app.use('/webhooks', setupWebhookHandler());
 

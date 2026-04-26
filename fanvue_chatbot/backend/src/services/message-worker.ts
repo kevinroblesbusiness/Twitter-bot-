@@ -1,6 +1,7 @@
 import { RedisClientType } from 'redis';
 import { queryOne, execute } from './database.js';
 import { createClaudeGenerator } from './claude-ai.js';
+import { buildFanContext, getOrCreateFanDetails } from './fan-service.js';
 import { searchContentByTags, rankContentForFan, predictConversionProbability } from './recommendation-engine.js';
 import { createFanvueAPI } from './fanvue-api.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -89,7 +90,11 @@ async function handleRegularMessage(
     const conversionProb = await predictConversionProbability(fan.id, bestContent.price);
     console.log(`   Conversion probability: ${(conversionProb * 100).toFixed(0)}%`);
 
-    // 5. Generate message
+    // 5. Build fan context
+    await getOrCreateFanDetails(fan.id, creator.id);
+    const fanContext = await buildFanContext(fan.id);
+
+    // 6. Generate message
     console.log('   Generating personalized message...');
     const messageGenResult = await claude.generateMessage(
       {
@@ -98,14 +103,17 @@ async function handleRegularMessage(
         message_tone: creator.settings?.message_tone || 'friendly',
         ai_profile: creator.ai_profile,
       },
-      fan,
+      {
+        ...fan,
+        fanContext: fanContext,
+      },
       bestContent,
       messageText
     );
 
     console.log(`   Message generated (confidence: ${messageGenResult.confidence.toFixed(2)})`);
 
-    // 6. Save message draft
+    // 7. Save message draft
     const messageId = uuidv4();
     await execute(
       `INSERT INTO messages (
@@ -131,7 +139,7 @@ async function handleRegularMessage(
 
     console.log(`   Message ${messageId} saved (status: ${messageGenResult.confidence >= (creator.settings?.auto_approve_threshold || 0.8) ? 'auto-approved' : 'pending'})`);
 
-    // 7. Auto-send if confidence high enough
+    // 8. Auto-send if confidence high enough
     if (messageGenResult.confidence >= (creator.settings?.auto_approve_threshold || 0.8)) {
       console.log('   Auto-sending message...');
       try {
@@ -185,6 +193,10 @@ async function handleWelcomeMessage(creator: any, fan: any) {
 
     const bestContent = candidates[0];
 
+    // Build fan context (may be empty for new fans)
+    await getOrCreateFanDetails(fan.id, creator.id);
+    const fanContext = await buildFanContext(fan.id);
+
     const messageGenResult = await claude.generateMessage(
       {
         id: creator.id,
@@ -192,7 +204,10 @@ async function handleWelcomeMessage(creator: any, fan: any) {
         message_tone: creator.settings?.message_tone || 'friendly',
         ai_profile: creator.ai_profile,
       },
-      fan,
+      {
+        ...fan,
+        fanContext: fanContext,
+      },
       bestContent,
       'Welcome! Check out what I have available'
     );
