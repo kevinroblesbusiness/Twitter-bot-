@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import Link from 'next/link';
 
 interface Props {
   creatorId: string;
@@ -39,8 +40,30 @@ export default function Fans({ creatorId }: Props) {
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>👥 Fans CRM</h1>
+    <div style={{ fontFamily: 'Arial, sans-serif' }}>
+      <nav style={{
+        backgroundColor: '#1976D2',
+        color: 'white',
+        padding: '16px 20px',
+        marginBottom: '20px',
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+      }}>
+        <h2 style={{ margin: 0, flex: 1 }}>Fanvue AI Chatbot</h2>
+        <Link href="/">
+          <a style={{ color: 'white', textDecoration: 'none', marginRight: '16px' }}>Messages</a>
+        </Link>
+        <Link href="/fans">
+          <a style={{ color: 'white', textDecoration: 'none', marginRight: '16px' }}>Fans</a>
+        </Link>
+        <Link href="/requests">
+          <a style={{ color: 'white', textDecoration: 'none' }}>Requests</a>
+        </Link>
+      </nav>
+
+      <div style={{ padding: '20px' }}>
+        <h1>👥 Fans CRM</h1>
 
       {loading ? (
         <p>Loading fans...</p>
@@ -71,6 +94,9 @@ export default function Fans({ creatorId }: Props) {
               <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
                 Churn Risk
               </th>
+              <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -85,11 +111,25 @@ export default function Fans({ creatorId }: Props) {
                 <td style={{ padding: '10px' }}>
                   {((fan.churn_risk || 0) * 100).toFixed(0)}%
                 </td>
+                <td style={{ padding: '10px' }}>
+                  <Link href={`/fan-details/${fan.id}`}>
+                    <a style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#2196F3',
+                      color: 'white',
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                    }}>
+                      Manage
+                    </a>
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      </div>
     </div>
   );
 }
